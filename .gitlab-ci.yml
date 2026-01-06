@@ -1,0 +1,118 @@
+# Spring PetClinic GitLab CI/CD Configuration
+# This pipeline builds, tests, and packages the Spring Boot application.
+# For more information, see: https://docs.gitlab.com/ee/ci/yaml/index.html
+
+image: maven:3.9.9-eclipse-temurin-17
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository -Dorg.slf4j.simpleLogger.defaultLogLevel=warn"
+  MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version"
+
+stages:
+  - build
+  - test
+  - package
+  - deploy
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - .m2/repository/
+    - target/
+
+include:
+  - template: Security/Dependency-Scanning.gitlab-ci.yml
+
+# Build job: Compile the project
+build:
+  stage: build
+  script:
+    - echo "Building Spring PetClinic application..."
+    - mvn $MAVEN_CLI_OPTS clean compile
+  artifacts:
+    paths:
+      - target/classes/
+    expire_in: 1 hour
+
+# Unit tests job
+unit-test:
+  stage: test
+  dependencies:
+    - build
+  script:
+    - echo "Running unit tests..."
+    - mvn $MAVEN_CLI_OPTS test
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - target/surefire-reports/TEST-*.xml
+    paths:
+      - target/surefire-reports/
+    expire_in: 30 days
+
+# Code quality checks (checkstyle and formatting)
+code-quality:
+  stage: test
+  dependencies:
+    - build
+  script:
+    - echo "Running code quality checks..."
+    - mvn $MAVEN_CLI_OPTS checkstyle:check
+  allow_failure: true
+  artifacts:
+    reports:
+      junit:
+        - target/checkstyle-result.xml
+    expire_in: 30 days
+
+# Package job: Build the JAR file
+package:
+  stage: package
+  dependencies:
+    - build
+    - unit-test
+  script:
+    - echo "Packaging application..."
+    - mvn $MAVEN_CLI_OPTS package -DskipTests
+  artifacts:
+    paths:
+      - target/spring-petclinic-*.jar
+    expire_in: 30 days
+
+# Deploy job using JFrog CLI
+deploy:
+  stage: deploy
+  dependencies:
+    - package
+  environment:
+    name: production
+  script:
+    - echo "Deploying Spring PetClinic application to JFrog Artifactory..."
+    # Install JFrog CLI
+    - curl -fL https://getcli.jfrog.io/v2-jf | sh
+    # get the location of the jfrog executable
+    #- chmod +x jf
+    # Configure JFrog CLI
+    - echo " the URL is --> ${JF_URL} for repo --> ${JF_REPO_NAME}"
+    - echo " the PROJECT NAME  is --> ${CI_PROJECT_NAME} for CI_PIPELINE_ID --> ${CI_PIPELINE_ID}"
+    - echo " JF_USER is --> ${JF_USER} "
+    # Ensure JF_URL and JF_ACCESS_TOKEN are set in GitLab CI/CD variables
+    - ./jf c add --user=${JF_USER} --url=${JF_URL} --access-token=${JF_ACCESS_TOKEN} --interactive=false
+    # Upload artifacts to 'libs-snapshot-local' repository <------ CHANGE REPO AS NEEDED
+
+    # Verify connection
+    - ./jf rt ping
+    - echo "Uploading artifact..."
+    - ./jf rt u "target/*.jar"  ${JF_REPO_NAME} --build-name=$CI_PROJECT_NAME --build-number=$CI_PIPELINE_ID
+    # Publish Build Info
+    # Collect environment variables for the build
+    - ./jf rt bce $CI_PROJECT_NAME $CI_PIPELINE_ID
+    
+    # Collect VCS details from Git and add them to the build
+    - ./jf rt bag $CI_PROJECT_NAME $CI_PIPELINE_ID 
+    # Publish the build information to Artifactory   
+    - ./jf rt bp $CI_PROJECT_NAME $CI_PIPELINE_ID 
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "main" || $CI_COMMIT_REF_NAME == "master"'
+  allow_failure: true
