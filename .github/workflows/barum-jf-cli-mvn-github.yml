@@ -58,13 +58,16 @@ jobs:
         uses: jfrog/setup-jfrog-cli@v4
         id: setup-cli
         env:
-          JF_URL: ${{env.JF_RT_URL}}
+          JF_URL: ${{ vars.JF_URL }}
           JFROG_CLI_RELEASES_REPO: '${{ env.JF_RT_URL }}/artifactory/${{ env.RT_MVN_REPO_VIRTUAL}}' 
           JFROG_CLI_EXTRACTORS_REMOTE: '${{ env.JF_RT_URL }}/artifactory/${{ env.RT_MVN_REPO_VIRTUAL}}'
-          JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          oidc-provider-name: ${{ vars.JF_OIDC_PROVIDER_NAME }}
-          disable-job-summary: ${{env.JOB_SUMMARY}}
+
+          JF_USER: ${{ secrets.JF_USER }}
+          # JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
+          JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}          
+        # with:
+        #   oidc-provider-name: ${{ vars.JF_OIDC_PROVIDER_NAME }}
+        #   disable-job-summary: ${{env.JOB_SUMMARY}}
 
       - name: Clone VCS
         uses: actions/checkout@v4 # ref: https://github.com/actions/checkout
@@ -92,8 +95,14 @@ jobs:
           # Python
           python3 -V
           pip3 -V
-          # jf config
+          echo "=========== Adding JFrog Configuration ==========="
+          jf c add --user=${{ secrets.JF_USER }} --url=${{vars.JF_URL}} --access-token=${{ secrets.JF_ACCESS_TOKEN}} --interactive=false
+
+          echo "=========== JFrog CLI Configuration0 show ==========="
           jf config show
+
+          echo "=========== Pinging JFrog Server ==========="          
+          jf rt ping
 
       - name: Config jf with mvn repos
         run: |
