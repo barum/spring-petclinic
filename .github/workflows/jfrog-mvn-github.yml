@@ -10,9 +10,9 @@ on:
 
 jobs:
   build:
-    name: 'Build Spring Petclinic'
+    name: 'Barum Build Spring Petclinic'
     env:
-      JFROG_CLI_BUILD_NAME: 'Petclinic from GitHub workflow'
+      JFROG_CLI_BUILD_NAME: 'Barum Spring Petclinic from GitHub workflow'
       JFROG_CLI_BUILD_NUMBER: ${{ github.run_number }}
       JFROG_CLI_BUILD_PROJECT: ${{ vars.JF_PROJECT }}
       JFROG_CLI_LOG_LEVEL: INFO
@@ -40,8 +40,12 @@ jobs:
         env:
           JF_URL: ${{ vars.JF_URL }}
           JF_USER: ${{ secrets.JF_USER }}
-          JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
+          # JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
           JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
+      - run: |
+          
+          jf c add --user=${JF_USER} --url=${JF_URL} --access-token=${JF_ACCESS_TOKEN} --interactive=false
+          jf rt ping          
       -
         name: Configure Build
         run: |
