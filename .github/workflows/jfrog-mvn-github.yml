@@ -89,7 +89,8 @@ jobs:
       -
         name: 25-Build and Deploy to JFrog Artifactory JF CLI
         run: |
-          echo "=========== Building Maven package ==========="        
+          echo "=========== Building Maven package ==========="
+          rm -rf target/        
           mvn ${{ env.MAVEN_CLI_OPTS }} clean compile 
 
           
