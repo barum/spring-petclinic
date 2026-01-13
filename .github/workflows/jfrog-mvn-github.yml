@@ -36,6 +36,8 @@ jobs:
           java-version: ${{matrix.java}}
           distribution: 'adopt'
           cache: maven
+          cache-dependency-path: 'pom.xml'
+
       - 
         name: Setup JFrog CLI
         uses: jfrog/setup-jfrog-cli@v4
