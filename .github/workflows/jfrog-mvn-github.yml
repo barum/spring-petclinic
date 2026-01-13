@@ -105,7 +105,10 @@ jobs:
       -
         name: Build Maven package
         run: |
+          echo "=========== Building Maven package ==========="        
+          mvn $MAVEN_CLI_OPTS clean compile
 
+          
           echo "=========== Building Maven clean install Package ==========="
           jf mvn clean install -DskipTests=true -Dtest=!PostgresIntegrationTests* '-Dspring-javaformat.skip=true' --project ${{ env.JFROG_CLI_BUILD_PROJECT }} -Dartifactory.publish.artifacts=false
       -
