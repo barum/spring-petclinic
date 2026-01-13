@@ -93,7 +93,13 @@ jobs:
           mvn ${{ env.MAVEN_CLI_OPTS }} clean compile 
 
           
+          echo "=========== Setting up Environment Variables FULL_IMAGE_NAME ==========="
+          echo "FULL_IMAGE_NAME=${{ vars.JF_HOST }}/${{ vars.JF_DOCKER_REPO_NAME }}/${{ vars.JF_PROJECT }}/spring-petclinic:${{ github.run_number }}" >> $GITHUB_ENV  
+
+
           echo "============ Uploading Artifacts to Artifactory ==========="
+
+
 
           # Upload JAR artifact
           echo "Uploading JAR artifact..."
@@ -107,13 +113,13 @@ jobs:
         
          
           echo "Docker Registry Host-> $JF_HOST"
-          echo "Full Image Name-> $FULL_IMAGE_NAME"
+          echo "Full Image Name-> ${{ env.FULL_IMAGE_NAME }}"
           
-          docker build -t $FULL_IMAGE_NAME .
+          docker build -t ${{ env.FULL_IMAGE_NAME }} .
           echo "============ pushing  docker image to JF==========="          
           echo "Pushing Docker Image to JFrog..."
-          docker tag $FULL_IMAGE_NAME $FULL_IMAGE_NAME
-          jf docker push $FULL_IMAGE_NAME
+          docker tag ${{ env.FULL_IMAGE_NAME }} ${{ env.FULL_IMAGE_NAME }}
+          jf docker push ${{ env.FULL_IMAGE_NAME }}
           
           # Publish Build Info
           echo "Publishing Build Info..."
