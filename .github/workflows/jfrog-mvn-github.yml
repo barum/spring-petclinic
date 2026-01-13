@@ -48,8 +48,10 @@ jobs:
           JF_USER: ${{ secrets.JF_USER }}
           # JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
           JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
-      - run: |
-          # JFrog CLI version
+      - 
+        name: Verify JFrog CLI and Environment
+        run: |
+          # verify installations
           jf --version
           # Ping the server
           jf rt ping
@@ -70,7 +72,9 @@ jobs:
         name: Configure Build
         run: |
           jf mvn-config --repo-resolve-releases fg-maven --repo-resolve-snapshots fg-maven --repo-deploy-releases fg-maven-dev-local-releases --repo-deploy-snapshots fg-maven-dev-local-snapshots
+
           echo "petclinicArtifactName=$(mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout)" >> $GITHUB_ENV
+          
           echo "petclinicVersion=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
       # -
       #   name: JFrog Curation Audit
