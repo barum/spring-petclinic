@@ -117,13 +117,13 @@ jobs:
         
          
           echo "Docker Registry Host-> $JF_HOST"
-          echo "Full Image Name-> ${{ env.FULL_IMAGE_NAME }}"
+          echo "Full Image Name-> $FULL_IMAGE_NAME"
           
-          docker build -t ${{ env.FULL_IMAGE_NAME }} .
+          docker build -t $FULL_IMAGE_NAME .
           echo "============ pushing  docker image to JF==========="          
           echo "Pushing Docker Image to JFrog..."
-          docker tag ${{ env.FULL_IMAGE_NAME }} ${{ env.FULL_IMAGE_NAME }}
-          jf docker push ${{ env.FULL_IMAGE_NAME }}
+          docker tag $FULL_IMAGE_NAME $FULL_IMAGE_NAME
+          jf docker push $FULL_IMAGE_NAME --build-name=${{env.JFROG_CLI_BUILD_PROJECT}} --build-number=${{env.JFROG_CLI_BUILD_NUMBER}}
           
           # Publish Build Info
           echo "Publishing Build Info..."
