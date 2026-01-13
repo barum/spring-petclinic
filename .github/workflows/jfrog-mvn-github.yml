@@ -16,6 +16,9 @@ jobs:
       JFROG_CLI_BUILD_NUMBER: ${{ github.run_number }}
       JFROG_CLI_BUILD_PROJECT: ${{ vars.JF_PROJECT }}
       JFROG_CLI_LOG_LEVEL: INFO
+      MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository -Dorg.slf4j.simpleLogger.defaultLogLevel=warn"
+      MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version"
+
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -27,10 +30,10 @@ jobs:
 
     steps:
       -
-        name: Checkout
+        name: 05-Checkout
         uses: actions/checkout@v4
       - 
-        name: Set up JDK ${{matrix.java}}
+        name: 10-Set up JDK ${{matrix.java}}
         uses: actions/setup-java@v4
         with:
           java-version: ${{matrix.java}}
@@ -39,7 +42,7 @@ jobs:
           cache-dependency-path: 'pom.xml'
 
       - 
-        name: Setup JFrog CLI
+        name: 15-Setup JFrog CLI
         uses: jfrog/setup-jfrog-cli@v4
         with:
           version: latest
@@ -49,7 +52,7 @@ jobs:
           # JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
           JF_ACCESS_TOKEN: ${{ secrets.JF_ACCESS_TOKEN }}
       - 
-        name: Verify JFrog CLI and Environment
+        name: 20-Verify JFrog CLI and Environment
         run: |
           # verify installations
           echo "=========== Verifying Installations ==========="
@@ -81,10 +84,59 @@ jobs:
           jf config show
 
           echo "=========== Pinging JFrog Server ==========="          
-          jf rt ping          
-     
+          jf rt ping
+
       -
-        name: Configure Build
+        name: 25-Build and Deploy to JFrog Artifactory JF CLI
+        run: |
+          echo "=========== Building Maven package ==========="        
+          mvn ${{ env.MAVEN_CLI_OPTS }} clean compile
+
+          echo "=========== Build and Deploy to JFrog Artifactory ==========="
+          # Configure JFrog CLI
+          echo "Configuring JFrog CLI..."
+          jf c add --user=${{ secrets.JF_USER }} --url=${{vars.JF_URL}} --access-token=${{ secrets.JF_ACCESS_TOKEN}} --interactive=false
+          
+          # Verify connection
+          jf rt ping
+          
+          # Upload JAR artifact
+          echo "Uploading JAR artifact..."
+          jf rt u "target/*.jar" ${{vars.JF_REPO_NAME}} --build-name=${{env.JFROG_CLI_BUILD_NAME}} --build-number=${{env.JFROG_CLI_BUILD_NUMBER}}
+          
+          # Build and Push Docker Image
+          echo "Building Docker Image..."
+          
+          #========================== DOCKER IMAGE BUILD & PUSH ==========================
+          # Configure JFrog CLI
+          echo "Configuring JFrog CLI..."
+          jf c add --user=${{ secrets.JF_USER }} --url=${{vars.JF_URL}} --access-token=${{ secrets.JF_ACCESS_TOKEN}} --interactive=false
+          
+          # Verify connection
+          jf rt ping
+
+
+          # Define Docker image name and tag
+          FULL_IMAGE_NAME="${{vars.JF_HOST}}/${{vars.JF_DOCKER_REPO}}/${{env.JFROG_CLI_BUILD_NAME}}:${{env.JFROG_CLI_BUILD_NUMBER}}"
+          echo "FULL_IMAGE_NAME=$FULL_IMAGE_NAME">> $GITHUB_ENV
+          
+          echo "Docker Registry Host-> $JF_HOST"
+          echo "Full Image Name-> $FULL_IMAGE_NAME"
+          
+          docker build -t $FULL_IMAGE_NAME .
+          
+          echo "Pushing Docker Image to JFrog..."
+          docker tag $FULL_IMAGE_NAME $FULL_IMAGE_NAME
+          jf docker push $FULL_IMAGE_NAME
+          
+          # Publish Build Info
+          echo "Publishing Build Info..."
+          jf rt bce ${{env.JFROG_CLI_BUILD_NAME}} ${{env.JFROG_CLI_BUILD_NUMBER}}
+          jf rt bag ${{env.JFROG_CLI_BUILD_NAME}} ${{env.JFROG_CLI_BUILD_NUMBER}} 
+          jf rt bp ${{env.JFROG_CLI_BUILD_NAME}} ${{env.JFROG_CLI_BUILD_NUMBER}}         
+          
+      -
+        name: 30-Configure Build
         run: |
           echo "=========== Configuring Maven Repositories ==========="
           jf mvn-config --repo-resolve-releases fg-maven --repo-resolve-snapshots fg-maven --repo-deploy-releases fg-maven-dev-local-releases --repo-deploy-snapshots fg-maven-dev-local-snapshots
@@ -103,52 +155,52 @@ jobs:
         # run: |
         #   jf audit --licenses --format=table --mvn=true
       -
-        name: Build Maven package
+        name: 35-Build Maven package
         run: |
           echo "=========== Building Maven package ==========="        
           mvn $MAVEN_CLI_OPTS clean compile
 
-          
+
           echo "=========== Building Maven clean install Package ==========="
           jf mvn clean install -DskipTests=true -Dtest=!PostgresIntegrationTests* '-Dspring-javaformat.skip=true' --project ${{ env.JFROG_CLI_BUILD_PROJECT }} -Dartifactory.publish.artifacts=false
       -
-        name: Scan Maven package
+        name: 40-Scan Maven package
         run: |
           echo "=========== Scanning Maven package ==========="
           jf scan --vuln --licenses --format=json ./target/${{ env.petclinicArtifactName }}-${{ env.petclinicVersion }}.jar
       -
-        name: Deploy Maven package to Artifactory
+        name: 45-Deploy Maven package to Artifactory
         if: github.ref == 'refs/heads/main'
         run: |
           echo "=========== Deploying Maven Package to Artifactory ==========="
           jf mvn deploy -Dmaven.main.skip=true -Dmaven.install.skip=true -DskipTests --project ${{ env.JFROG_CLI_BUILD_PROJECT }}
       -
-        name: Build Docker image
+        name: 50-Build Docker image
         if: github.ref == 'refs/heads/main'
         run: |
           echo "=========== Building Docker image ==========="
           jf docker build -t soleng.jfrog.io/fg-docker/${{ env.petclinicArtifactName }}:${{ env.petclinicVersion }} --build-arg petclinicArtifact=./target/${{ env.petclinicArtifactName }}-${{ env.petclinicVersion }}.jar .
           jf docker push soleng.jfrog.io/fg-docker/${{ env.petclinicArtifactName }}:${{ env.petclinicVersion }} --project ${{ env.JFROG_CLI_BUILD_PROJECT }}
       -
-        name: Scan Docker image
+        name: 55-Scan Docker image
         if: github.ref == 'refs/heads/main'
         run: |
           echo "=========== Scanning Docker image ==========="
           jf docker scan soleng.jfrog.io/fg-docker/${{ env.petclinicArtifactName }}:${{ env.petclinicVersion }} --severity='HIGH,CRITICAL' --vuln
       -
-        name: Publish build info
+        name: 60-Publish build info
         if: github.ref == 'refs/heads/main'
         run: |
           echo "=========== Publishing build info ==========="
           jf rt build-publish --project ${{ env.JFROG_CLI_BUILD_PROJECT }} "${{ env.JFROG_CLI_BUILD_NAME }}" "${{ env.JFROG_CLI_BUILD_NUMBER }}"
       -
-        name: Scan build
+        name: 65-Scan build
         if: github.ref == 'refs/heads/main'
         run: |
           echo "=========== Scanning build ==========="
           jf build-scan --vuln --fail=false --project ${{ env.JFROG_CLI_BUILD_PROJECT }} "${{ env.JFROG_CLI_BUILD_NAME }}" "${{ env.JFROG_CLI_BUILD_NUMBER }}"
       -
-        name: Create Release Bundle
+        name: 70-Create Release Bundle
         if: github.ref == 'refs/heads/main'
         run: |
           echo "=== Generating Release Bundle ==="
