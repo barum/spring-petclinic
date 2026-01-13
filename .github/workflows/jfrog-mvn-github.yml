@@ -38,8 +38,8 @@ jobs:
         with:
           java-version: ${{matrix.java}}
           distribution: 'adopt'
-          # cache: maven
-          # cache-dependency-path: 'pom.xml'
+          cache: maven
+          cache-dependency-path: 'pom.xml'
 
       - 
         name: 15-Setup JFrog CLI
