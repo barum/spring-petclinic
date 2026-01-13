@@ -92,10 +92,10 @@ jobs:
           echo "=========== Building Maven package ==========="        
           mvn ${{ env.MAVEN_CLI_OPTS }} clean compile
 
-          echo "=========== Build and Deploy to JFrog Artifactory ==========="
-          # Configure JFrog CLI
-          echo "Configuring JFrog CLI..."
-          jf c add --user=${{ secrets.JF_USER }} --url=${{vars.JF_URL}} --access-token=${{ secrets.JF_ACCESS_TOKEN}} --interactive=false
+          # echo "=========== Build and Deploy to JFrog Artifactory ==========="
+          # # Configure JFrog CLI
+          # echo "Configuring JFrog CLI..."
+          # jf c add --user=${{ secrets.JF_USER }} --url=${{vars.JF_URL}} --access-token=${{ secrets.JF_ACCESS_TOKEN}} --interactive=false
           
           # Verify connection
           jf rt ping
