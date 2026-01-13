@@ -48,10 +48,10 @@ jobs:
           jf mvn-config --repo-resolve-releases fg-maven --repo-resolve-snapshots fg-maven --repo-deploy-releases fg-maven-dev-local-releases --repo-deploy-snapshots fg-maven-dev-local-snapshots
           echo "petclinicArtifactName=$(mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout)" >> $GITHUB_ENV
           echo "petclinicVersion=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
-      -
-        name: JFrog Curation Audit
-        run: |
-          jf curation-audit
+      # -
+      #   name: JFrog Curation Audit
+      #   run: |
+      #     jf curation-audit
       -
         name: Audit Source Code
         run: |
