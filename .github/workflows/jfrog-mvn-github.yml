@@ -92,15 +92,6 @@ jobs:
           echo "=========== Building Maven package ==========="        
           mvn ${{ env.MAVEN_CLI_OPTS }} clean compile 
 
-          # echo "=========== Build and Deploy to JFrog Artifactory ==========="
-          # # Configure JFrog CLI
-          # echo "Configuring JFrog CLI..."
-          # jf c add --user=${{ secrets.JF_USER }} --url=${{vars.JF_URL}} --access-token=${{ secrets.JF_ACCESS_TOKEN}} --interactive=false
-          
-
-          echo "=========== Verify Ping ==========="
-          # Verify connection
-          jf rt ping
           
           echo "============ Uploading Artifacts to Artifactory ==========="
 
@@ -112,26 +103,14 @@ jobs:
           jf rt u "target/*.jar" ${{vars.JF_REPO_NAME}} --build-name=${{env.JFROG_CLI_BUILD_PROJECT}} --build-number=${{env.JFROG_CLI_BUILD_NUMBER}}
           
           # Build and Push Docker Image
-          echo "Building Docker Image..."
-          
-          #========================== DOCKER IMAGE BUILD & PUSH ==========================
-          # Configure JFrog CLI
-          echo "Configuring JFrog CLI..." 
-          jf c add --user=${{ secrets.JF_USER }} --url=${{vars.JF_URL}} --access-token=${{ secrets.JF_ACCESS_TOKEN}} --interactive=false
-          
-          # Verify connection
-          jf rt ping
-
-
-          # Define Docker image name and tag
-          FULL_IMAGE_NAME="${{vars.JF_HOST}}/${{vars.JF_DOCKER_REPO}}/${{env.JFROG_CLI_BUILD_PROJECT}}:${{env.JFROG_CLI_BUILD_NUMBER}}"
-          echo "FULL_IMAGE_NAME=$FULL_IMAGE_NAME">> $GITHUB_ENV
-          
+          echo "============ BUILDING docker ==========="
+        
+         
           echo "Docker Registry Host-> $JF_HOST"
           echo "Full Image Name-> $FULL_IMAGE_NAME"
           
           docker build -t $FULL_IMAGE_NAME .
-          
+          echo "============ pushing  docker image to JF==========="          
           echo "Pushing Docker Image to JFrog..."
           docker tag $FULL_IMAGE_NAME $FULL_IMAGE_NAME
           jf docker push $FULL_IMAGE_NAME
