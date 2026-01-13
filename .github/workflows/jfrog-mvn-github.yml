@@ -91,7 +91,7 @@ jobs:
         run: |
           echo "=========== Building Maven package ==========="
           rm -rf target/        
-          mvn ${{ env.MAVEN_CLI_OPTS }} clean compile 
+          mvn --batch-mode --errors --fail-at-end --show-version package -DskipTests
 
           
           echo "=========== Setting up Environment Variables FULL_IMAGE_NAME ==========="
