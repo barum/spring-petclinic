@@ -93,7 +93,7 @@ jobs:
           echo "Current working directory: $pwd"
           DIR=$(ls -al)
           echo "Directory listing: $DIR"
-          mvn -X --batch-mode --errors --fail-at-end --show-version package -DskipTests
+          ./mvnw -X --batch-mode --errors --fail-at-end --show-version package -DskipTests
       -
         name: 25_B-Upload Artifacts to JFrog Artifactory JF CLI
         run: |          
