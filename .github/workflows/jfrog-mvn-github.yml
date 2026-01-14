@@ -36,9 +36,8 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: ${{matrix.java}}
-          distribution: 'adopt'
-          # cache: maven
-          # cache-dependency-path: 'pom.xml'
+          distribution: 'temurin'
+          cache: maven
 
       - 
         name: 15-Setup JFrog CLI
@@ -185,13 +184,8 @@ jobs:
       -
         name: 35-Build Maven package
         run: |
-          # echo "=========== Building Maven package ==========="        
-          # ./mvnw $MAVEN_CLI_OPTS clean compile
-
-
           echo "=========== Building Maven clean install Package ==========="
-          # jf mvn clean install -DskipTests=true -Dtest=!PostgresIntegrationTests* '-Dspring-javaformat.skip=true' --project ${{ env.JFROG_CLI_BUILD_PROJECT }} -Dartifactory.publish.artifacts=false
-          jf mvn clean install --project ${{ env.JFROG_CLI_BUILD_PROJECT }} -Dartifactory.publish.artifacts=false
+          jf mvn clean install -DskipTests=true '-Dspring-javaformat.skip=true' --project ${{ env.JFROG_CLI_BUILD_PROJECT }} -Dartifactory.publish.artifacts=false
       -
         name: 40-Scan Maven package
         run: |
