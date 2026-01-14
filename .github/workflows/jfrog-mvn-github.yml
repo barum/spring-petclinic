@@ -63,6 +63,10 @@ jobs:
           echo "=========== MAVEN Environment Details ==========="
           mvn -version
 
+          echo "=========== MAVEN Environment Details ==========="
+          ./mvnw -version
+          
+          
           echo " =========== ENV VARIABLES ==========="
           docker -v
 
@@ -166,7 +170,14 @@ jobs:
           echo "=========== Configuring Maven Repositories ==========="
           echo " release repo: ${{ vars.JF_RT_MVN_REPO_RELEASE_VIRTUAL }}"
           echo " snapshot repo: ${{ vars.JF_RT_MVN_REPO_SNAPSHOT_VIRTUAL }}"
-          jf mvn-config --repo-resolve-releases ${{ vars.JF_RT_MVN_REPO_RELEASE_VIRTUAL }} --repo-resolve-snapshots ${{ vars.JF_RT_MVN_REPO_SNAPSHOT_VIRTUAL }} --repo-deploy-releases ${{ vars.JF_RT_MVN_REPO_RELEASE_VIRTUAL }} --repo-deploy-snapshots ${{ vars.JF_RT_MVN_REPO_SNAPSHOT_VIRTUAL }}
+          jf mvn-config --repo-resolve-releases ${{ vars.JF_RT_MVN_REPO_RELEASE_VIRTUAL }} --repo-resolve-snapshots ${{ vars.JF_RT_MVN_REPO_SNAPSHOT_VIRTUAL }} --repo-deploy-releases ${{ vars.JF_RT_MVN_REPO_RELEASE_VIRTUAL }} --repo-deploy-snapshots ${{ vars.JF_RT_MVN_REPO_SNAPSHOT_VIRTUAL }} --use-wrapper
+
+          echo "=========== Configured Maven Repositories ==========="
+          cat .mvn/wrapper/maven-wrapper.properties
+
+          echo "=========== Configured JFrog Projects ==========="
+
+          cat .jfrog/projects/maven.yaml
 
           echo "=========== Setting up Environment Variables petclinicArtifactName ==========="
           echo "petclinicArtifactName=$(./mvnw help:evaluate -Dexpression=project.artifactId -q -DforceStdout)" >> $GITHUB_ENV
@@ -185,7 +196,7 @@ jobs:
         name: 35-Build Maven package
         run: |
           echo "=========== Building Maven clean install Package ==========="
-          jf mvn clean install -DskipTests=true '-Dspring-javaformat.skip=true' --project ${{ env.JFROG_CLI_BUILD_PROJECT }} -Dartifactory.publish.artifacts=true -DuseWrapper=true
+          jf mvn clean install -DskipTests=true '-Dspring-javaformat.skip=true' --project ${{ env.JFROG_CLI_BUILD_PROJECT }} -Dartifactory.publish.artifacts=true
       -
         name: 40-Scan Maven package
         run: |
