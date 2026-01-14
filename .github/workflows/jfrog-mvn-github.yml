@@ -145,13 +145,13 @@ jobs:
         name: 30-Configure Build
         run: |
           echo "=========== Configuring Maven Repositories ==========="
-          jf mvn-config --repo-resolve-releases fg-maven --repo-resolve-snapshots fg-maven --repo-deploy-releases fg-maven-dev-local-releases --repo-deploy-snapshots fg-maven-dev-local-snapshots
+          jf mvn-config --repo-resolve-releases petclinic-mvn-libs-release --repo-resolve-snapshots petclinic-mvn-libs-snapshot --repo-deploy-releases petclinic-mvn-libs-release --repo-deploy-snapshots petclinic-mvn-libs-snapshot
 
           echo "=========== Setting up Environment Variables petclinicArtifactName ==========="
-          echo "petclinicArtifactName=$(mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout)" >> $GITHUB_ENV
+          echo "petclinicArtifactName=$(./mvnw help:evaluate -Dexpression=project.artifactId -q -DforceStdout)" >> $GITHUB_ENV
           
           echo "=========== Setting up Environment Variables petclinicVersion ==========="
-          echo "petclinicVersion=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+          echo "petclinicVersion=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
       # -
       #   name: JFrog Curation Audit
       #   run: |
@@ -163,8 +163,8 @@ jobs:
       -
         name: 35-Build Maven package
         run: |
-          echo "=========== Building Maven package ==========="        
-          mvn $MAVEN_CLI_OPTS clean compile
+          # echo "=========== Building Maven package ==========="        
+          # ./mvnw $MAVEN_CLI_OPTS clean compile
 
 
           echo "=========== Building Maven clean install Package ==========="
