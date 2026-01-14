@@ -184,19 +184,19 @@ jobs:
           
           echo "=========== Setting up Environment Variables petclinicVersion ==========="
           echo "petclinicVersion=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
-      # -
-      #   name: JFrog Curation Audit
-      #   run: |
-      #     jf curation-audit
-      # -
-        # name: Audit Source Code
-        # run: |
-        #   jf audit --licenses --format=table --mvn=true
+      -
+        name: JFrog Curation Audit
+        run: |
+          jf curation-audit
+      -
+        name: Audit Source Code
+        run: |
+          jf audit --licenses --format=table --mvn=true
       -
         name: 35-Build Maven package
         run: |
           echo "=========== Building Maven clean install Package ==========="
-          jf mvn clean install -DskipTests=true '-Dspring-javaformat.skip=true' --project ${{ env.JFROG_CLI_BUILD_PROJECT }} -Dartifactory.publish.artifacts=true
+          jf mvn clean install -DskipTests=true '-Dspring-javaformat.skip=true' --project ${{ env.JFROG_CLI_BUILD_PROJECT }} -Dartifactory.publish.artifacts=false
       -
         name: 40-Scan Maven package
         run: |
@@ -208,25 +208,6 @@ jobs:
         run: |
           echo "=========== Deploying Maven Package to Artifactory ==========="
           jf mvn deploy -Dmaven.main.skip=true -Dmaven.install.skip=true -DskipTests --project ${{ env.JFROG_CLI_BUILD_PROJECT }}
-      -
-        name: 50-Build Docker image
-        if: github.ref == 'refs/heads/main'
-        run: |
-          echo "=========== Building Docker image ==========="
-          jf docker build -t soleng.jfrog.io/fg-docker/${{ env.petclinicArtifactName }}:${{ env.petclinicVersion }} --build-arg petclinicArtifact=./target/${{ env.petclinicArtifactName }}-${{ env.petclinicVersion }}.jar .
-          jf docker push soleng.jfrog.io/fg-docker/${{ env.petclinicArtifactName }}:${{ env.petclinicVersion }} --project ${{ env.JFROG_CLI_BUILD_PROJECT }}
-      -
-        name: 55-Scan Docker image
-        if: github.ref == 'refs/heads/main'
-        run: |
-          echo "=========== Scanning Docker image ==========="
-          jf docker scan soleng.jfrog.io/fg-docker/${{ env.petclinicArtifactName }}:${{ env.petclinicVersion }} --severity='HIGH,CRITICAL' --vuln
-      -
-        name: 60-Publish build info
-        if: github.ref == 'refs/heads/main'
-        run: |
-          echo "=========== Publishing build info ==========="
-          jf rt build-publish --project ${{ env.JFROG_CLI_BUILD_PROJECT }} "${{ env.JFROG_CLI_BUILD_PROJECT }}" "${{ env.JFROG_CLI_BUILD_NUMBER }}"
       -
         name: 65-Scan build
         if: github.ref == 'refs/heads/main'
