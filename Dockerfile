@@ -1,4 +1,4 @@
-FROM maven:3.9-eclipse-temurin-17-alpine as builder
+FROM maven:3.8-eclipse-temurin-17-alpine as builder
 
 WORKDIR /usr/src/app
 
