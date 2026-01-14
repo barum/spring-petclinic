@@ -185,7 +185,7 @@ jobs:
         name: 35-Build Maven package
         run: |
           echo "=========== Building Maven clean install Package ==========="
-          jf mvn clean install -DskipTests=true '-Dspring-javaformat.skip=true' --project ${{ env.JFROG_CLI_BUILD_PROJECT }} -Dartifactory.publish.artifacts=false
+          jf mvn clean install -DskipTests=true '-Dspring-javaformat.skip=true' --project ${{ env.JFROG_CLI_BUILD_PROJECT }} -Dartifactory.publish.artifacts=true -DuseWrapper=true
       -
         name: 40-Scan Maven package
         run: |
