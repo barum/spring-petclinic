@@ -25,6 +25,6 @@ jobs:
         with:
           java-version: ${{matrix.java}}
           distribution: 'adopt'
-          cache: maven
+          # cache: maven
       - name: Build with Maven Wrapper
         run: ./mvn -B package
