@@ -85,6 +85,13 @@ jobs:
           echo "=========== Pinging JFrog Server ==========="          
           jf rt ping
 
+
+# =======================================================
+# This is the first part of the workflow with basic steps
+# to build the maven project. 
+# intent is to show how to build the maven project and
+# upload artifacts to artifactory without using JFrog Maven Plugin
+# =======================================================          
       -
         name: 25_A-Build Maven package
         run: |
@@ -95,57 +102,72 @@ jobs:
           echo "Directory listing: $DIR"
           ./mvnw -X --batch-mode --errors --fail-at-end --show-version package -DskipTests
       -
-        name: 25_B-Upload Artifacts to JFrog Artifactory JF CLI
+        name: 25_B-Upload Artifacts to JFrog Artifactory JF CLI without integration with JFrog Maven Plugin
         run: |          
           echo "=========== Setting up Environment Variables FULL_IMAGE_NAME ==========="
           FULL_IMAGE_NAME="${{ vars.JF_HOST }}/${{ vars.JF_DOCKER_REPO_NAME }}/${{ vars.JF_PROJECT }}/spring-petclinic:${{ github.run_number }}"
           echo "FULL_IMAGE_NAME=$FULL_IMAGE_NAME"
 
-
-          echo "FULL_IMAGE_NAME=${{ vars.JF_HOST }}/${{ vars.JF_DOCKER_REPO_NAME }}/${{ vars.JF_PROJECT }}/spring-petclinic:${{ github.run_number }}" >> $GITHUB_ENV  
-
-
+          echo "FULL_IMAGE_NAME=$FULL_IMAGE_NAME" >> $GITHUB_ENV
           echo "============ Uploading Artifacts to Artifactory ==========="
 
-
-
-          # Upload JAR artifact
-          echo "Uploading JAR artifact..."
           echo "Artifact Path: target/*.jar to Repository: ${{vars.JF_REPO_NAME}} with Build Name: ${{env.JFROG_CLI_BUILD_PROJECT}} and Build Number: ${{env.JFROG_CLI_BUILD_NUMBER}}"
 
 
           jf rt u "target/*.jar" ${{vars.JF_REPO_NAME}} --build-name=${{env.JFROG_CLI_BUILD_PROJECT}} --build-number=${{env.JFROG_CLI_BUILD_NUMBER}}
-          
-          # Build and Push Docker Image
-          echo "============ BUILDING docker ==========="
+          jf rt bce ${{env.JFROG_CLI_BUILD_PROJECT}} ${{env.JFROG_CLI_BUILD_NUMBER}}
+          jf rt bag ${{env.JFROG_CLI_BUILD_PROJECT}} ${{env.JFROG_CLI_BUILD_NUMBER}} 
+          jf rt bp ${{env.JFROG_CLI_BUILD_PROJECT}} ${{env.JFROG_CLI_BUILD_NUMBER}}              
+# =======================================================
+# This is trying to create a workflow
+# this section uses the maven build artifacts and 
+# create a docker image and push to artifactory docker repository
+# =======================================================   
       -
         name: 25_C-Build Docker image
         run: |          
-         
+          # Build and Push Docker Image
+          echo "============ BUILDING docker ==========="
+
           echo "Docker Registry Host-> $JF_HOST"
           echo "Full Image Name-> $FULL_IMAGE_NAME"
-          
           docker build -t $FULL_IMAGE_NAME .
-          echo "============ pushing  docker image to JF==========="          
-          echo "Pushing Docker Image to JFrog..."
-          docker tag $FULL_IMAGE_NAME $FULL_IMAGE_NAME
+
+# =======================================================
+# This is the first part of the workflow with basic steps
+# to build the maven project. 
+# intent is to show how to deploy the docker image and
+# upload artifacts to artifactory WITH using JFrog Maven Plugin
+# =======================================================  
 
       -
         name: 25_D-Push Docker image to JFrog Artifactory JF CLI
         run: |            
-          jf docker push $FULL_IMAGE_NAME --build-name=${{env.JFROG_CLI_BUILD_PROJECT}} --build-number=${{env.JFROG_CLI_BUILD_NUMBER}}
           
-          # Publish Build Info
-          echo "Publishing Build Info..."
+
+          echo "============ Tag and Push Docker image to JF==========="          
+          echo "Pushing Docker Image to JFrog..."
+          docker tag $FULL_IMAGE_NAME $FULL_IMAGE_NAME
+          jf docker push $FULL_IMAGE_NAME --build-name=${{env.JFROG_CLI_BUILD_PROJECT}} --build-number=${{env.JFROG_CLI_BUILD_NUMBER}}
+
           jf rt bce ${{env.JFROG_CLI_BUILD_PROJECT}} ${{env.JFROG_CLI_BUILD_NUMBER}}
           jf rt bag ${{env.JFROG_CLI_BUILD_PROJECT}} ${{env.JFROG_CLI_BUILD_NUMBER}} 
           jf rt bp ${{env.JFROG_CLI_BUILD_PROJECT}} ${{env.JFROG_CLI_BUILD_NUMBER}}         
-          
+
+# =======================================================
+# This is the first part of the workflow with basic steps
+# to build the maven project. 
+# intent is to show how to the build the maven project and
+# upload artifacts to artifactory WITH using JFrog Maven Plugin
+# =======================================================
+
       -
         name: 30-Configure Build
         run: |
           echo "=========== Configuring Maven Repositories ==========="
-          jf mvn-config --repo-resolve-releases petclinic-mvn-libs-release --repo-resolve-snapshots petclinic-mvn-libs-snapshot --repo-deploy-releases petclinic-mvn-libs-release --repo-deploy-snapshots petclinic-mvn-libs-snapshot
+          echo " release repo: ${{ vars.JF_RT_MVN_REPO_RELEASE_VIRTUAL }}"
+          echo " snapshot repo: ${{ vars.JF_RT_MVN_REPO_SNAPSHOT_VIRTUAL }}"
+          jf mvn-config --repo-resolve-releases ${{ vars.JF_RT_MVN_REPO_RELEASE_VIRTUAL }} --repo-resolve-snapshots ${{ vars.JF_RT_MVN_REPO_SNAPSHOT_VIRTUAL }} --repo-deploy-releases ${{ vars.JF_RT_MVN_REPO_RELEASE_VIRTUAL }} --repo-deploy-snapshots ${{ vars.JF_RT_MVN_REPO_SNAPSHOT_VIRTUAL }}
 
           echo "=========== Setting up Environment Variables petclinicArtifactName ==========="
           echo "petclinicArtifactName=$(./mvnw help:evaluate -Dexpression=project.artifactId -q -DforceStdout)" >> $GITHUB_ENV
@@ -168,7 +190,8 @@ jobs:
 
 
           echo "=========== Building Maven clean install Package ==========="
-          jf mvn clean install -DskipTests=true -Dtest=!PostgresIntegrationTests* '-Dspring-javaformat.skip=true' --project ${{ env.JFROG_CLI_BUILD_PROJECT }} -Dartifactory.publish.artifacts=false
+          # jf mvn clean install -DskipTests=true -Dtest=!PostgresIntegrationTests* '-Dspring-javaformat.skip=true' --project ${{ env.JFROG_CLI_BUILD_PROJECT }} -Dartifactory.publish.artifacts=false
+          jf mvn clean install --project ${{ env.JFROG_CLI_BUILD_PROJECT }} -Dartifactory.publish.artifacts=false
       -
         name: 40-Scan Maven package
         run: |
