@@ -4,16 +4,11 @@
 name: Java CI with Maven
 
 on:
-# TURN-OFF on every push
+
   push:
-    branches: [ nobuild ]
-#   pull_request:
-#     branches: [ main ]
-# issue_comment triggers this action on each comment on issues and pull requests
-#   issue_comment:
-#     types: [created]
-#   pull_request_target:
-#     types: [opened, synchronize]
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
@@ -26,11 +21,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK ${{matrix.java}}
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v2
         with:
           java-version: ${{matrix.java}}
           distribution: 'adopt'
           cache: maven
       - name: Build with Maven Wrapper
         run: ./mvnw -B package
-

@@ -15,18 +15,17 @@ jobs:
       JFROG_CLI_BUILD_NAME: 'AAA-Barum-Build-Spring-Petclinic'
       JFROG_CLI_BUILD_NUMBER: ${{ github.run_number }}
       JFROG_CLI_BUILD_PROJECT: ${{ vars.JF_PROJECT }}
-      JFROG_CLI_LOG_LEVEL: INFO
+      JFROG_CLI_LOG_LEVEL: ${{ vars.JFROG_CLI_LOG_LEVEL }}
       MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository -Dorg.slf4j.simpleLogger.defaultLogLevel=warn"
       MAVEN_CLI_OPTS: "--batch-mode --errors --fail-at-end --show-version"
 
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        java: [17 ]
-        include:
-          - language: ['java-kotlin']
-            build-mode: none
+        java: ['17']
+        # include:
+          # - language: ['java-kotlin']
+          #   build-mode: none
 
     steps:
       -
@@ -38,8 +37,8 @@ jobs:
         with:
           java-version: ${{matrix.java}}
           distribution: 'adopt'
-          cache: maven
-          cache-dependency-path: 'pom.xml'
+          # cache: maven
+          # cache-dependency-path: 'pom.xml'
 
       - 
         name: 15-Setup JFrog CLI
@@ -87,7 +86,7 @@ jobs:
           jf rt ping
 
       -
-        name: 25-Build and Deploy to JFrog Artifactory JF CLI
+        name: 25_A-Build Maven package
         run: |
           echo "=========== Building Maven package ==========="
           pwd=$PWD
@@ -95,8 +94,9 @@ jobs:
           DIR=$(ls -al)
           echo "Directory listing: $DIR"
           mvn -X --batch-mode --errors --fail-at-end --show-version package -DskipTests
-
-          
+      -
+        name: 25_B-Upload Artifacts to JFrog Artifactory JF CLI
+        run: |          
           echo "=========== Setting up Environment Variables FULL_IMAGE_NAME ==========="
           FULL_IMAGE_NAME="${{ vars.JF_HOST }}/${{ vars.JF_DOCKER_REPO_NAME }}/${{ vars.JF_PROJECT }}/spring-petclinic:${{ github.run_number }}"
           echo "FULL_IMAGE_NAME=$FULL_IMAGE_NAME"
@@ -118,7 +118,9 @@ jobs:
           
           # Build and Push Docker Image
           echo "============ BUILDING docker ==========="
-        
+      -
+        name: 25_C-Build Docker image
+        run: |          
          
           echo "Docker Registry Host-> $JF_HOST"
           echo "Full Image Name-> $FULL_IMAGE_NAME"
@@ -127,6 +129,10 @@ jobs:
           echo "============ pushing  docker image to JF==========="          
           echo "Pushing Docker Image to JFrog..."
           docker tag $FULL_IMAGE_NAME $FULL_IMAGE_NAME
+
+      -
+        name: 25_D-Push Docker image to JFrog Artifactory JF CLI
+        run: |            
           jf docker push $FULL_IMAGE_NAME --build-name=${{env.JFROG_CLI_BUILD_PROJECT}} --build-number=${{env.JFROG_CLI_BUILD_NUMBER}}
           
           # Publish Build Info
