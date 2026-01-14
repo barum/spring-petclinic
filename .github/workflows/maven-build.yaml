@@ -27,4 +27,4 @@ jobs:
           distribution: 'adopt'
           cache: maven
       - name: Build with Maven Wrapper
-        run: ./mvnw -B package
+        run: ./mvn -B package
