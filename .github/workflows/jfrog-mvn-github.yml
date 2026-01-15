@@ -208,12 +208,17 @@ jobs:
         run: |
           echo "=========== Deploying Maven Package to Artifactory ==========="
           jf mvn deploy -Dmaven.main.skip=true -Dmaven.install.skip=true -DskipTests --project ${{ env.JFROG_CLI_BUILD_PROJECT }}
+
+          echo "=========== Publishing build info ==========="
+          jf rt bce ${{env.JFROG_CLI_BUILD_NAME}} ${{env.JFROG_CLI_BUILD_NUMBER}}
+          jf rt bag ${{env.JFROG_CLI_BUILD_NAME}} ${{env.JFROG_CLI_BUILD_NUMBER}}           
+          jf rt build-publish --project ${{ env.JFROG_CLI_BUILD_PROJECT }} "${{ env.JFROG_CLI_BUILD_NAME }}" "${{ env.JFROG_CLI_BUILD_NUMBER }}"
       -
         name: 65-Scan build
         if: github.ref == 'refs/heads/main'
         run: |
           echo "=========== Scanning build ==========="
-          jf build-scan --vuln --fail=false --project ${{ env.JFROG_CLI_BUILD_PROJECT }} "${{ env.JFROG_CLI_BUILD_PROJECT }}" "${{ env.JFROG_CLI_BUILD_NUMBER }}"
+          jf build-scan --vuln --fail=false --project ${{ env.JFROG_CLI_BUILD_PROJECT }} "${{ env.JFROG_CLI_BUILD_NAME }}" "${{ env.JFROG_CLI_BUILD_NUMBER }}"
       -
         name: 70-Create Release Bundle
         if: github.ref == 'refs/heads/main'
@@ -223,7 +228,7 @@ jobs:
                 {
                   "builds": [
                     {
-                      "name": "${{ env.JFROG_CLI_BUILD_PROJECT }}",
+                      "name": "${{ env.JFROG_CLI_BUILD_NAME }}",
                       "number": "${{ env.JFROG_CLI_BUILD_NUMBER }}",
                       "project": "${{ env.JFROG_CLI_BUILD_PROJECT }}"
                     }
