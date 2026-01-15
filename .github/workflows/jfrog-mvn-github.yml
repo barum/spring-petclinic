@@ -219,20 +219,3 @@ jobs:
         run: |
           echo "=========== Scanning build ==========="
           jf build-scan --vuln --fail=false --project ${{ env.JFROG_CLI_BUILD_PROJECT }} "${{ env.JFROG_CLI_BUILD_NAME }}" "${{ env.JFROG_CLI_BUILD_NUMBER }}"
-      -
-        name: 70-Create Release Bundle
-        if: github.ref == 'refs/heads/main'
-        run: |
-          echo "=== Generating Release Bundle ==="
-          echo '
-                {
-                  "builds": [
-                    {
-                      "name": "${{ env.JFROG_CLI_BUILD_NAME }}",
-                      "number": "${{ env.JFROG_CLI_BUILD_NUMBER }}",
-                      "project": "${{ env.JFROG_CLI_BUILD_PROJECT }}"
-                    }
-                  ]
-                }
-          ' > builds.json
-          jf release-bundle-create --builds=./builds.json --project ${{ env.JFROG_CLI_BUILD_PROJECT }} --signing-key fredericg-gpg "${{ env.petclinicArtifactName }}" "${{ env.petclinicVersion }}-build${{ env.JFROG_CLI_BUILD_NUMBER }}"
